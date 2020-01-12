@@ -10,29 +10,25 @@ library(anytime) # install.packages("anytime",repos="http://cran.rstudio.com/")
 library(Rcpp)
 sourceCpp("ymdhmsVWL.cpp")
 
-df=tibble(v1=rep("20191231",180*10),v6=rep("042355",180*10))
-dt=as.data.table(df)
-
+samples1 <- as.character(Sys.time()-sample(1e7, 1e5, TRUE)) #random dates
+df <- as.data.frame(samples1)
+dt <- as.data.table(samples1)
 res=microbenchmark::microbenchmark(
-  df1=
-    df%>%mutate(et=as.numeric(as.POSIXct(paste0(v1,v6),format="%Y%m%d%H%M%S"))),
+  POSIXct_df =
+    df %>% mutate( et=as.numeric(as.POSIXct(samples1,format="%Y-%m-%d %H:%M%S"))),
   
-  df2=
-    df%>%mutate(et=as.numeric(ymd_hms(paste0(v1,v6)))),
+  ymd_hms_df =
+    df %>% mutate(et=as.numeric(ymd_hms(samples1))),
   
-  df5=
-    df%>%mutate(et=ymd_hms(paste0(df$v1,df$v6))),
+  ymd_hms_dt=
+    dt[,et:=as.numeric(ymd_hms(samples1))],
   
-  dt1=
-    dt[,et:=as.numeric(ymd_hms(paste0(v1,v6)))],
+  anytime_dt =
+    dt[,et:=as.numeric(anytime(samples1))],
   
-  dt2=
-    dt[,et:=as.numeric(anytime(paste0(v1,v6)))],
-  
-  dt9=
-    df%>% mutate(et = ymdhmsVWL(v1, v6))
+  ymdhmsVWL_df =
+    df %>% mutate(et = ymdhmsVWL(samples1))
   
 )
 
 ggplot2::autoplot(res)
-
